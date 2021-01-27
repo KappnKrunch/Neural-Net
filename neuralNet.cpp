@@ -53,7 +53,7 @@ void NeuralNet::feedForward(std::vector<double> inputs)
 
 void NeuralNet::backpropagate(std::vector<double> desiredOutput)
 {
-    Matrix delta = outputLayer.backpropogateWith(desiredOutput, learningRate);
+    MatrixXd delta = outputLayer.backpropogateWith(desiredOutput, learningRate);
 
     for(int i(0); i < hiddenLayers.size(); i++)
     {
@@ -126,25 +126,80 @@ void NeuralNet::printExamples(int examples)
 
         std::cout << "Inputs " << std::endl;
 
-        MatrixMath::transpose(MatrixMath::fromArray(trueData.first)).print();
+        std::cout << trueData.first << std::endl;
 
 
         std::cout << "True Outputs" << std::endl;
 
-        MatrixMath::transpose(MatrixMath::fromArray(trueData.second)).print();
+        std::cout << trueData.second << std::endl;
 
 
         std::cout << "Guessed Outputs" << std::endl;
 
-        MatrixMath::transpose(outputLayer.outputs).print();
+        std::cout << outputLayer.outputs.transpose() << std::endl;
 
         std::cout << std::endl;
     }
 }
 
+void NeuralNet::printNetworkImage()
+{
+    std::ofstream image("Neural_Net_Gen"+std::to_string(iteration)+".ppm");
+
+    int res = 256;
+
+    std::cout << "Printing image.." << std::endl;
+
+    //
+    std::vector<std::vector<Color>> baseImage;
+
+    baseImage.resize(res);
+
+    for(int i(0); i < res; i++)
+        baseImage.at(i).resize(res, Color{254,254,254});
+
+    for(int i(0); i < res; i++)
+    {
+        int y1 = ceil(randomWave(double(i)/res) * double(res));
+        y1 = std::min(std::max(y1,0),res-1);
+
+        int y2 = floor(randomWave(double(i)/res) * double(res));
+        y2 = std::min(std::max(y2,0),res-1);
+
+        baseImage[y1][i] = Color{50,100,200};
+        baseImage[y2][i] = Color{50,100,200};
+    }
+
+    for(int i(0); i < res; i++)
+    {
+        feedForward({(double(i)/res)});
+        int y = int(outputLayer.outputs.coeff(0,0) * double(res));
+
+        y = std::max(std::min(y, res-1), 0);
+
+        baseImage[y][i] = Color{0,0,0};
+    }
+
+    image << "P3" << std::endl;
+    image << res << " " << res << std::endl;
+    image << "255" << std::endl;
+
+
+    for(int y(0); y < res; y++)
+    {
+        for(int x(0); x < res; x++)
+        {
+            image << baseImage[y][x].r << " " << baseImage[y][x].g << " " << baseImage[y][x].b << std::endl;
+        }
+    }
+
+    image.close();
+
+    std::cout << "Done!" << std::endl;
+}
+
 TrainingData NeuralNet::xORExample()
 {
-
     std::vector<double> inputs;
 
     std::vector<double> outputs;
@@ -166,9 +221,9 @@ TrainingData NeuralNet::fakeExample()
 
     std::vector<double> outputs;
 
-    inputs.resize(inputLayer.inputs.getHeight());
+    inputs.resize(inputLayer.inputs.rows());
 
-    outputs.resize(outputLayer.outputs.getHeight());
+    outputs.resize(outputLayer.outputs.rows());
 
     for(int i(0); i < inputs.size(); i++)
         inputs.at(i) = rand() % 2;
@@ -194,8 +249,26 @@ TrainingData NeuralNet::powXExample()
     outputs[0] /= 2*2*2*2*2;
 
 
-
     return {inputs, outputs};
+}
+
+double NeuralNet::normalSinWave(double x)
+{
+    return sin(x * 2.0 * 3.15159)*0.5 + 0.5;
+}
+
+double NeuralNet::randomWave(double x)
+{
+    double out(0);
+
+    std::vector<double> coefs{1,0,0,1,0,0,1,0,0,1};
+
+    for(int i(0); i < coefs.size(); i++)
+    {
+        out += coefs[i] * normalSinWave(x * double(i));
+    }
+
+    return (out / coefs.size());
 }
 
 
@@ -204,15 +277,26 @@ TrainingData NeuralNet::sinXExample()
     std::vector<double> inputs;
     std::vector<double> outputs;
 
-    double randPi = double(rand() % (2*314159));
-    randPi /= 100000;
+    double randPi = double(rand() % 10000)/ 10000;
 
     inputs.push_back(randPi);
 
-    outputs.push_back((sin(randPi)*0.5 + 0.5));
+    outputs.push_back(normalSinWave(randPi));
 
-    //outputs[0] /= 2*2*2*2*2;
 
+    return {inputs, outputs};
+}
+
+TrainingData NeuralNet::waveExample()
+{
+    std::vector<double> inputs;
+    std::vector<double> outputs;
+
+    double randPi = double(rand() % 10000)/ 10000;
+
+    inputs.push_back(randPi);
+
+    outputs.push_back(randomWave(randPi));
 
 
     return {inputs, outputs};
@@ -220,10 +304,10 @@ TrainingData NeuralNet::sinXExample()
 
 TrainingData NeuralNet::generateTrainingData()
 {
-    TrainingData data = sinXExample();
+    TrainingData data = waveExample();
 
-    if(inputLayer.inputs.getHeight() != data.first.size() ||
-       outputLayer.outputs.getHeight() != data.second.size() )
+    if(inputLayer.inputs.rows() != data.first.size() ||
+       outputLayer.outputs.rows() != data.second.size() )
     {
         std::cout << "The example does not work with this network configuration";
 

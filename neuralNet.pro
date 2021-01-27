@@ -6,10 +6,12 @@ CONFIG -= qt
 SOURCES += \
         layers.cpp \
         main.cpp \
-        matrix.cpp \
         neuralNet.cpp
 
 HEADERS += \
     layers.h \
-    matrix.h \
     neuralNet.h
+
+INCLUDEPATH = C:\Users\thean\OneDrive\Documents\neuralNet\eigen\
+
+DISTFILES += \

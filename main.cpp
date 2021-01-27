@@ -1,35 +1,27 @@
 #include <iostream>
 #include "neuralNet.h"
-#include "matrix.h"
 
 using namespace std;
 
 int main()
 {
-    NeuralNet net = NeuralNet(1,{7,6},1);
+    NeuralNet net = NeuralNet(1,{128,32,128},1);
 
-    net.print();
+    //net.print();
 
-    net.train(10000, .05);
+    //net.train(4000, .05);
 
-    /*
+    net.train(100000, .025);
+
+    net.printNetworkImage();
+
     for(int i(0); i < 10; i++)
     {
-        net.train(100, 0.05);
 
-        //net.print();
 
-        net.printExamples(7);
-
-        cout << endl;
+        //net.printNetworkImage();
     }
-    */
 
-    net.printExamples(50);
-
-    cout << endl;
-
-    net.print();
 
     return 0;
 }

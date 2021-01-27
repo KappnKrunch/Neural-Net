@@ -1,16 +1,22 @@
 #ifndef LAYERS_H
 #define LAYERS_H
-#include <random>
-#include "matrix.h"
 
+#include <random>
+#include <vector>
+#include <iostream>
+#include <math.h>
+#include <iomanip>
+#include <Eigen/Dense>
+
+using namespace Eigen;
 
 class InputLayer
 {
 public:
 
-    Matrix inputs;
+    MatrixXd inputs;
 
-    Matrix outputs;
+    MatrixXd outputs;
 
     int size;
 
@@ -38,22 +44,22 @@ static double softPlus(double x);
 
 static double dSoftPlus(double x);
 
+static MatrixXd map(MatrixXd, double (*func)(double) );
+
 
 class HiddenLayer : public InputLayer
 {
 public:
 
-    Matrix inputWeights;
+    MatrixXd inputWeights;
 
     HiddenLayer();
 
     HiddenLayer(int inputSize, int outputSize);
 
-    void feedFrom(Matrix feed);
+    void feedFrom(MatrixXd feed);
 
-    Matrix calculateErrors(Matrix desiredOutputs);
-
-    Matrix backpropogateWith(Matrix lastGradient);
+    MatrixXd backpropogateWith(MatrixXd lastGradient);
 
     void setAllBiases(double bias);
 
@@ -75,11 +81,11 @@ public:
 
     OutputLayer(int inputSize, int outputSize);
 
-    void feedFrom(Matrix feed);
+    void feedFrom(MatrixXd feed);
 
-    Matrix backpropogateWith(Matrix desiredOutputs, double learningRate);
+    MatrixXd backpropogateWith(MatrixXd desiredOutputs, double learningRate);
 
-    Matrix backpropogateWith(std::vector<double> desiredOutputs, double learningRate);
+    MatrixXd backpropogateWith(std::vector<double> desiredOutputs, double learningRate);
 };
 
 #endif // LAYERS_H

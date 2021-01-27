@@ -6,7 +6,7 @@
 
 
 InputLayer::InputLayer(int size)
-    :inputs(Matrix(size,1)), outputs(Matrix(size,1)), size(size)
+    :inputs(MatrixXd(size,1)), outputs(MatrixXd(size,1)), size(size)
 {}
 
 void InputLayer::feedFrom(std::vector<double>& arr)
@@ -25,19 +25,19 @@ void InputLayer::feedFrom(std::vector<double>& arr)
     //for an input layer, the outputs are almost exactly the inputs
     for(int i(0); i < size; i++)
     {
-        inputs.at(i,0) = 1.0 * arr[i];
-        outputs.at(i,0) = 1.0 * arr[i];
+        inputs.coeffRef(i,0) = arr[i];
+        outputs.coeffRef(i,0) = arr[i];
     }
 }
 
 void InputLayer::printOutputs()
 {
-    outputs.print();
+    std::cout << outputs << std::endl;
 }
 
 void InputLayer::printInputs()
 {
-    inputs.print();
+    std::cout << inputs << std::endl;
 }
 
 void InputLayer::print()
@@ -83,50 +83,59 @@ static double dSoftPlus(double x)
     return sigmoid(x);
 }
 
+MatrixXd map(MatrixXd matrix, double (*func)(double) )
+{
+    for(int i(0); i < matrix.rows(); i++)
+        for(int j(0); j < matrix.cols(); j++)
+        {
+            matrix.coeffRef(i,j) = (*func)(matrix.coeff(i,j));
+        }
+
+    return matrix;
+}
+
 
 HiddenLayer::HiddenLayer()
     :HiddenLayer(0,0)
 {}
 
 HiddenLayer::HiddenLayer(int inputSize, int outputSize)
-    :InputLayer(0),inputWeights(Matrix(outputSize, inputSize + 1))
+    :InputLayer(0),inputWeights(MatrixXd(outputSize, inputSize + 1))
 {
     size = outputSize;
 
-    inputs = MatrixMath::addRow(Matrix(inputSize, 1), 1.0);
+    inputs = ArrayXd(inputSize+1);
 
-    outputs = MatrixMath::addRow(Matrix(outputSize, 1), 1.0);
+    outputs = ArrayXd(outputSize);
 
-    //setAllBiases(1.0);
-
-    //setRandomBiases();
+    setAllBiases(0);
 
     setRandomWeights();
-
-    //inputWeights.at(layerSize, inputs.size) = 1;
 }
 
-void HiddenLayer::feedFrom(Matrix feed)
+void HiddenLayer::feedFrom(MatrixXd feed)
 {
-    inputs = MatrixMath::addRow(feed, 1.0);
+    inputs = feed;
+    inputs.conservativeResize(inputs.rows() + 1,1);
+    inputs.coeffRef(feed.rows(), 0) = 1.0;
 
-    outputs = MatrixMath::multiply(inputWeights, inputs);
+    outputs = inputWeights * inputs;
 
-    outputs = MatrixMath::map(outputs, relu);
+    outputs = map(outputs, relu);
 }
 
-Matrix HiddenLayer::backpropogateWith(Matrix lastGradient)
+MatrixXd HiddenLayer::backpropogateWith(MatrixXd lastGradient)
 {
-    Matrix gradient = MatrixMath::hadamard(lastGradient, MatrixMath::map(outputs, dRelu));
+    MatrixXd gradient = lastGradient.cwiseProduct(map(outputs, dRelu));
 
-    Matrix deltaE = MatrixMath::multiply(gradient, MatrixMath::transpose(inputs));
+    MatrixXd deltaE = gradient * inputs.transpose();
 
-    Matrix gradientOut = MatrixMath::multiply(MatrixMath::transpose(inputWeights), lastGradient);
+    MatrixXd gradientOut = inputWeights.transpose() * lastGradient;
 
-    gradientOut = MatrixMath::rowPopBack(gradientOut);
+    gradientOut.conservativeResize(gradientOut.rows()-1, gradientOut.cols());
 
 
-    inputWeights = MatrixMath::add(inputWeights, deltaE);
+    inputWeights = inputWeights + deltaE;
 
 
     return gradientOut;
@@ -135,37 +144,39 @@ Matrix HiddenLayer::backpropogateWith(Matrix lastGradient)
 void HiddenLayer::setAllBiases(double bias)
 {
     for(int i(0); i < size; i++)
-        inputWeights.at(i,inputWeights.getWidth()-1) = bias;
+        inputWeights.coeffRef(i,inputWeights.cols()-1) = bias;
 }
 
 void HiddenLayer::setRandomBiases()
 {
     for(int i(0); i < size; i++)
-        inputWeights.at(i, inputWeights.getWidth()-1) =
+        inputWeights.coeffRef(i, inputWeights.cols()-1) =
                                       1.0 - (double(rand() % 2000) / 1000);
 }
 
 void HiddenLayer::setBiases(std::vector<double> biases)
 {
     for(int i(0); i < size; i++)
-        inputWeights.at(i,inputWeights.getWidth()-1) = biases.at(i);
+        inputWeights.coeffRef(i,inputWeights.cols()-1) = biases.at(i);
 }
 
 void HiddenLayer::printInputWeights()
 {
-    inputWeights.print();
+    std::cout << inputWeights << std::endl;
 }
 
 void HiddenLayer::setRandomWeights()
 {
     for(int i(0); i < size; i++)
     {
-        for(int j(0); j < inputWeights.getWidth()-1; j++)
+        for(int j(0); j < inputWeights.cols()-1; j++)
         {
-            inputWeights.at(i,j) = 1.0 - (double(rand() % 2000) / 1000);
-            //inputWeights.at(i,j) *= (1.0 - (double(rand() % 2000) / 1000));
+            inputWeights.coeffRef(i,j) = 1.0 - (double(rand() % 2000) / 1000);
+            inputWeights.coeffRef(i,j) *= ((double(rand() % 1000) / 1000));
         }
     }
+
+
 }
 
 void HiddenLayer::print()
@@ -200,47 +211,45 @@ OutputLayer::OutputLayer(int inputSize, int outputSize)
 {
     size = outputSize;
 
-    inputs = MatrixMath::addRow(Matrix(inputSize, 1), 1.0);
+    inputs.conservativeResize(size+1,1);
 
-    outputs = Matrix(outputSize, 1);
+    outputs.conservativeResize(outputSize, 1);
 
-    inputWeights = Matrix(outputSize, inputSize + 1);
+    inputWeights.conservativeResize(outputSize, inputSize + 1);
 
-    //setAllBiases(1.0);
-
-    //setRandomBiases();
+    setAllBiases(0);
 
     setRandomWeights();
 }
 
-void OutputLayer::feedFrom(Matrix feed)
+void OutputLayer::feedFrom(MatrixXd feed)
 {
-    inputs = MatrixMath::addRow(feed, 1.0);
+    inputs = feed;
+    inputs.conservativeResize(feed.rows() + 1, 1);
+    inputs.coeffRef(feed.rows(), 0) = 1.0;
 
-    outputs = MatrixMath::multiply(inputWeights, inputs);
+    outputs = inputWeights * inputs;
 
-    outputs = MatrixMath::map(outputs, relu);
+    outputs = map(outputs, relu);
 }
 
-Matrix OutputLayer::backpropogateWith(Matrix desiredOutputs, double learningRate)
+MatrixXd OutputLayer::backpropogateWith(MatrixXd desiredOutputs, double learningRate)
 {
-    Matrix errors = MatrixMath::subtract(desiredOutputs, outputs);
+    MatrixXd errors = desiredOutputs - outputs;
 
-    errors = MatrixMath::multiply(errors, learningRate);
+    errors = errors * learningRate;
 
-    Matrix gradient = MatrixMath::hadamard(errors, MatrixMath::map(outputs, dRelu));
+    MatrixXd gradient = errors.cwiseProduct(map(outputs, dSoftPlus));
 
-    Matrix deltaE = MatrixMath::multiply(gradient, MatrixMath::transpose(inputs));
-
-
-
-    Matrix gradientOut = MatrixMath::multiply(MatrixMath::transpose(inputWeights), errors);
-
-    gradientOut = MatrixMath::rowPopBack(gradientOut);
+    MatrixXd deltaE = gradient * inputs.transpose();
 
 
-    inputWeights = MatrixMath::add(inputWeights, deltaE);
+    MatrixXd gradientOut = inputWeights.transpose() * errors;
 
+    gradientOut.conservativeResize(gradientOut.rows()-1,gradientOut.cols());
+
+
+    inputWeights = inputWeights + deltaE;
     //std::cout << "outs" << std::endl;
 
     //gradientOut.print();
@@ -249,7 +258,7 @@ Matrix OutputLayer::backpropogateWith(Matrix desiredOutputs, double learningRate
     return gradientOut;
 }
 
-Matrix OutputLayer::backpropogateWith(std::vector<double> desiredOutputs, double learningRate)
+MatrixXd OutputLayer::backpropogateWith(std::vector<double> desiredOutputs, double learningRate)
 {
-    return OutputLayer::backpropogateWith(MatrixMath::fromArray(desiredOutputs), learningRate);
+    return OutputLayer::backpropogateWith(Map<Matrix<double, 1, 1> >(desiredOutputs.data()), learningRate);
 }

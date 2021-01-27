@@ -2,6 +2,8 @@
 #define NEURALNET_H
 
 #include "layers.h"
+#include <fstream>
+#include <string>
 
 typedef std::pair<std::vector<double>, std::vector<double>> TrainingData;
 
@@ -36,13 +38,26 @@ public:
     TrainingData powXExample();
 
     TrainingData sinXExample();
+
+    TrainingData waveExample();
+
+    double normalSinWave(double x);
+
+    double randomWave(double x);
     
     void print();
 
     void printExamples(int examples);
+
+    void printNetworkImage(); //idk
 };
 
 template <typename T>
 std::ostream & operator << (std::ostream & output, const std::vector<T> & vector);
+
+struct Color
+{
+    int r,g,b;
+};
 
 #endif // NEURALNET_H
