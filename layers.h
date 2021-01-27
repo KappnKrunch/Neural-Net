@@ -10,6 +10,22 @@
 
 using namespace Eigen;
 
+
+static double sigmoid(double x);
+
+static double dSigmoid(double x);
+
+static double relu(double x);
+
+static double dRelu(double x);
+
+static double softPlus(double x);
+
+static double dSoftPlus(double x);
+
+static MatrixXd map(MatrixXd, double (*func)(double) );
+
+
 class InputLayer
 {
 public:
@@ -30,21 +46,6 @@ public:
 
     void print();
 };
-
-
-static double sigmoid(double x);
-
-static double dSigmoid(double x);
-
-static double relu(double x);
-
-static double dRelu(double x);
-
-static double softPlus(double x);
-
-static double dSoftPlus(double x);
-
-static MatrixXd map(MatrixXd, double (*func)(double) );
 
 
 class HiddenLayer : public InputLayer
@@ -73,7 +74,6 @@ public:
 
     void print();
 };
-
 
 class OutputLayer : public HiddenLayer
 {

@@ -2,9 +2,6 @@
 
 
 
-
-
-
 InputLayer::InputLayer(int size)
     :inputs(MatrixXd(size,1)), outputs(MatrixXd(size,1)), size(size)
 {}
@@ -53,46 +50,12 @@ void InputLayer::print()
     printOutputs();
 }
 
-double sigmoid(double x)
-{
-    return 1.0 / (1.0 + exp(-x));
-}
 
-double dSigmoid(double x)
-{
-    return exp(-x) * sigmoid(x) * sigmoid(x);
-}
 
-double relu(double x)
-{
-    return (x >= 0 ? x : 0);
-}
 
-double dRelu(double x)
-{
-    return (x > 0 ? 1 : 0);
-}
 
-static double softPlus(double x)
-{
-    return log(1 + exp(x));
-}
 
-static double dSoftPlus(double x)
-{
-    return sigmoid(x);
-}
 
-MatrixXd map(MatrixXd matrix, double (*func)(double) )
-{
-    for(int i(0); i < matrix.rows(); i++)
-        for(int j(0); j < matrix.cols(); j++)
-        {
-            matrix.coeffRef(i,j) = (*func)(matrix.coeff(i,j));
-        }
-
-    return matrix;
-}
 
 
 HiddenLayer::HiddenLayer()
@@ -175,8 +138,6 @@ void HiddenLayer::setRandomWeights()
             inputWeights.coeffRef(i,j) *= ((double(rand() % 1000) / 1000));
         }
     }
-
-
 }
 
 void HiddenLayer::print()
@@ -197,6 +158,8 @@ void HiddenLayer::print()
 
     printOutputs();
 }
+
+
 
 
 
@@ -261,4 +224,52 @@ MatrixXd OutputLayer::backpropogateWith(MatrixXd desiredOutputs, double learning
 MatrixXd OutputLayer::backpropogateWith(std::vector<double> desiredOutputs, double learningRate)
 {
     return OutputLayer::backpropogateWith(Map<Matrix<double, 1, 1> >(desiredOutputs.data()), learningRate);
+}
+
+
+
+
+
+
+
+
+double sigmoid(double x)
+{
+    return 1.0 / (1.0 + exp(-x));
+}
+
+double dSigmoid(double x)
+{
+    return exp(-x) * sigmoid(x) * sigmoid(x);
+}
+
+double relu(double x)
+{
+    return (x >= 0 ? x : 0);
+}
+
+double dRelu(double x)
+{
+    return (x > 0 ? 1 : 0);
+}
+
+static double softPlus(double x)
+{
+    return log(1 + exp(x));
+}
+
+static double dSoftPlus(double x)
+{
+    return sigmoid(x);
+}
+
+MatrixXd map(MatrixXd matrix, double (*func)(double) )
+{
+    for(int i(0); i < matrix.rows(); i++)
+        for(int j(0); j < matrix.cols(); j++)
+        {
+            matrix.coeffRef(i,j) = (*func)(matrix.coeff(i,j));
+        }
+
+    return matrix;
 }

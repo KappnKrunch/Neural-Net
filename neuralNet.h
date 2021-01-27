@@ -55,9 +55,6 @@ public:
 template <typename T>
 std::ostream & operator << (std::ostream & output, const std::vector<T> & vector);
 
-struct Color
-{
-    int r,g,b;
-};
+struct Color{int r,g,b;};
 
 #endif // NEURALNET_H

@@ -1,10 +1,9 @@
 #include "neuralNet.h"
 
 
-
 NeuralNet::NeuralNet(int inputSize, int hiddenSize, int outputSize)
     :inputLayer(inputSize),
-      hiddenLayers(0),
+     hiddenLayers(0),
      outputLayer(hiddenSize, outputSize),
      iteration(0),learningRate(0.01)
 {
@@ -19,7 +18,7 @@ NeuralNet::NeuralNet(int inputSize, int hiddenSize, int outputSize)
 
 NeuralNet::NeuralNet(int inputSize, std::vector<int> hiddenSize, int outputSize)
     :inputLayer(inputSize),
-      hiddenLayers(hiddenSize.size()),
+     hiddenLayers(hiddenSize.size()),
      outputLayer(hiddenSize[hiddenSize.size()-1], outputSize),
      iteration(0),learningRate(0.01)
 {
@@ -80,6 +79,23 @@ void NeuralNet::train(int iterations, double learningRate)
     }
 
     feedForward(data.first);
+}
+
+TrainingData NeuralNet::generateTrainingData()
+{
+    TrainingData data = waveExample();
+
+    if(inputLayer.inputs.rows() != data.first.size() ||
+       outputLayer.outputs.rows() != data.second.size() )
+    {
+        std::cout << "The example does not work with this network configuration";
+
+        std::cout << std::endl;
+
+        exit(1);
+    }
+
+    return data;
 }
 
 void NeuralNet::print()
@@ -234,7 +250,6 @@ TrainingData NeuralNet::fakeExample()
     return {inputs, outputs};
 }
 
-
 TrainingData NeuralNet::powXExample()
 {
     std::vector<double> inputs;
@@ -261,6 +276,7 @@ double NeuralNet::randomWave(double x)
 {
     double out(0);
 
+    //peaks maybe corresponded to difficulty training
     std::vector<double> coefs{1,0,0,1,0,0,1,0,0,1};
 
     for(int i(0); i < coefs.size(); i++)
@@ -270,7 +286,6 @@ double NeuralNet::randomWave(double x)
 
     return (out / coefs.size());
 }
-
 
 TrainingData NeuralNet::sinXExample()
 {
@@ -301,24 +316,6 @@ TrainingData NeuralNet::waveExample()
 
     return {inputs, outputs};
 }
-
-TrainingData NeuralNet::generateTrainingData()
-{
-    TrainingData data = waveExample();
-
-    if(inputLayer.inputs.rows() != data.first.size() ||
-       outputLayer.outputs.rows() != data.second.size() )
-    {
-        std::cout << "The example does not work with this network configuration";
-
-        std::cout << std::endl;
-
-        exit(1);
-    }
-
-    return data;
-}
-
 
 template <typename T>
 std::ostream & operator << (std::ostream & output, const std::vector<T> & vector)
