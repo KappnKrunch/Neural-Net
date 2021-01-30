@@ -226,14 +226,10 @@ MatrixXd OutputLayer::backpropogateWith(MatrixXd desiredOutputs, double learning
 
     MatrixXd gradientOut = inputWeights.transpose() * errors;
 
-    gradientOut.conservativeResize(gradientOut.rows()-1,gradientOut.cols());
+    gradientOut.conservativeResize(gradientOut.rows()-1, gradientOut.cols());
 
 
     inputWeights = inputWeights + deltaE;
-    //std::cout << "outs" << std::endl;
-
-    //gradientOut.print();
-
 
     return gradientOut;
 }

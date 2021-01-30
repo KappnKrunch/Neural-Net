@@ -25,17 +25,22 @@ public:
 
     void train(int iterations, double learningRate);
 
-    void trainStochastically(int sampleSize, int iterations, double learningRate);
+    void trainStochastically(int sampleSize, int sampleCount, double learningRate);
 
     void feedForward(std::vector<double> inputs);
 
     void backpropagate(std::vector<double> desiredOutput);
+
+    void setDropoutPresevervationRateForAll(double rate);
+
+    void setDropoutPresevervationRate(std::vector<double> layerRates);
 
     void print();
 
     void printExamples(int examples);
 
     void print1x1NetworkImage(std::string name);
+
 
     TrainingData generateTrainingData();
 

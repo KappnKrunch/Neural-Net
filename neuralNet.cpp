@@ -80,6 +80,55 @@ void NeuralNet::train(int iterations, double learningRate)
     feedForward(data.first);
 }
 
+void NeuralNet::trainStochastically(int sampleSize, int sampleCount, double learningRate)
+{
+    std::cout << "Training stochastically... " << std::endl;
+
+    TrainingData data;
+
+    this->learningRate = learningRate;
+
+
+    for(int i(0); i < sampleCount; i++)
+    {
+        MatrixXd summedOutputs = MatrixXd(outputLayer.outputs.rows(), 1).setZero();
+
+        for(int j(0); j < sampleSize; j++)
+        {
+            data = generateTrainingData();
+
+            feedForward(data.first);
+
+            summedOutputs += outputLayer.outputs;
+        }
+
+        outputLayer.outputs = (summedOutputs / sampleSize);
+
+        backpropagate(data.second);
+    }
+
+
+    feedForward(data.first);
+}
+
+void NeuralNet::setDropoutPresevervationRateForAll(double rate)
+{
+    std::vector<double> layerRates;
+
+
+    layerRates.resize(1 + hiddenLayers.size(), rate);
+
+    setDropoutPresevervationRate(layerRates);
+}
+
+void NeuralNet::setDropoutPresevervationRate(std::vector<double> layerRates)
+{
+    inputLayer.dropoutPreservationRate = layerRates[0];
+
+    for(int i(0); i < hiddenLayers.size(); i++)
+        hiddenLayers[i].dropoutPreservationRate = layerRates[i + 1];
+}
+
 TrainingData NeuralNet::generateTrainingData()
 {
     TrainingData data = waveExample();
