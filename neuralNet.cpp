@@ -46,7 +46,6 @@ void NeuralNet::feedForward(std::vector<double> inputs)
         hiddenLayers[i].feedFrom(hiddenLayers[i-1].outputs);
     }
 
-
     outputLayer.feedFrom(hiddenLayers[hiddenLayers.size() - 1].outputs);
 }
 
@@ -158,15 +157,14 @@ void NeuralNet::printExamples(int examples)
     }
 }
 
-void NeuralNet::printNetworkImage()
+void NeuralNet::print1x1NetworkImage(std::string name)
 {
-    std::ofstream image("Neural_Net_Gen"+std::to_string(iteration)+".ppm");
+    std::ofstream image(name + ".ppm");
 
     int res = 256;
 
     std::cout << "Printing image.." << std::endl;
 
-    //
     std::vector<std::vector<Color>> baseImage;
 
     baseImage.resize(res);
@@ -177,13 +175,13 @@ void NeuralNet::printNetworkImage()
     for(int i(0); i < res; i++)
     {
         int y1 = ceil(randomWave(double(i)/res) * double(res));
-        y1 = std::min(std::max(y1,0),res-1);
+        y1 = std::min(std::max(y1, 0), res-1);
 
         int y2 = floor(randomWave(double(i)/res) * double(res));
-        y2 = std::min(std::max(y2,0),res-1);
+        y2 = std::min(std::max(y2, 0), res-1);
 
-        baseImage[y1][i] = Color{50,100,200};
-        baseImage[y2][i] = Color{50,100,200};
+        baseImage[y1][i] = Color{50, 100, 200};
+        baseImage[y2][i] = Color{50, 100, 200};
     }
 
     for(int i(0); i < res; i++)
@@ -193,7 +191,7 @@ void NeuralNet::printNetworkImage()
 
         y = std::max(std::min(y, res-1), 0);
 
-        baseImage[y][i] = Color{0,0,0};
+        baseImage[y][i] = Color{0, 0, 0};
     }
 
     image << "P3" << std::endl;

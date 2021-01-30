@@ -25,6 +25,8 @@ static double dSoftPlus(double x);
 
 static MatrixXd map(MatrixXd, double (*func)(double) );
 
+static MatrixXd maskMatrix(MatrixXd mat, MatrixXd mask, double strength);
+
 
 class InputLayer
 {
@@ -36,9 +38,15 @@ public:
 
     int size;
 
+    double dropoutPreservationRate;
+
+    MatrixXd dropoutValuesForOutputs;
+
     InputLayer(int size);
 
     void feedFrom(std::vector<double>& arr);
+
+    void dropRandomOutputs();
 
     void printInputs();
 

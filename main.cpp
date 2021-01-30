@@ -5,11 +5,11 @@ using namespace std;
 
 int main()
 {
-    NeuralNet net = NeuralNet(1,{32,64,32},1);
+    NeuralNet net = NeuralNet(1,{256,256},1);
 
-    net.train(1000000, .025);
+    net.train(10000, .03);
 
-    net.printNetworkImage();
+    net.print1x1NetworkImage("Gen " + std::to_string(net.iteration));
 
 
     return 0;
