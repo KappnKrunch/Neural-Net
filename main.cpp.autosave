@@ -10,8 +10,6 @@ int main()
 
     time_t startTime = time(0);
 
-    cout << "t" << endl;
-
 
     net.trainStochastically(100, 10000, .01);
 

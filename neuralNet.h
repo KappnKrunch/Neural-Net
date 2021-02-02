@@ -5,7 +5,7 @@
 #include <fstream>
 #include <string>
 
-typedef std::pair<std::vector<double>, std::vector<double>> TrainingData;
+typedef std::pair<MatrixXd, MatrixXd> TrainingData;
 
 class NeuralNet
 {
@@ -27,9 +27,9 @@ public:
 
     void trainStochastically(int sampleSize, int sampleCount, double learningRate);
 
-    void feedForward(std::vector<double> inputs);
+    void feedForward(MatrixXd inputs);
 
-    void backpropagate(std::vector<double> desiredOutput);
+    void backpropagate(MatrixXd desiredOutput);
 
     void setDropoutPresevervationRateForAll(double rate);
 
@@ -41,26 +41,12 @@ public:
 
     void print1x1NetworkImage(std::string name);
 
-
-    TrainingData generateTrainingData();
+    void print2x1NetworkImage(std::string name);
 
     TrainingData xORExample();
 
-    TrainingData fakeExample();
-
-    TrainingData powXExample();
-
-    TrainingData sinXExample();
-
-    TrainingData waveExample();
-
-    double normalSinWave(double x);
-
-    double randomWave(double x);
+    TrainingData sinExample();
 };
-
-template <typename T>
-std::ostream & operator << (std::ostream & output, const std::vector<T> & vector);
 
 struct Color{int r,g,b;};
 

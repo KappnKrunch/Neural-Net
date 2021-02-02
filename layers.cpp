@@ -6,11 +6,11 @@ InputLayer::InputLayer(int size)
      dropoutPreservationRate(1.0), dropoutValuesForOutputs(MatrixXd(size,1))
 {}
 
-void InputLayer::feedFrom(std::vector<double>& arr)
+void InputLayer::feedFrom(MatrixXd newInputs)
 {
     //gives information to the layer
 
-    if(arr.size() != size)
+    if(inputs.rows() != size)
     {
         std::cout << "Input error; array size different than inputs size";
 
@@ -19,14 +19,9 @@ void InputLayer::feedFrom(std::vector<double>& arr)
         exit(1);
     }
 
-    //for an input layer, the outputs are almost exactly the inputs
-    for(int i(0); i < size; i++)
-    {
-        inputs.coeffRef(i,0) = arr[i];
-        outputs.coeffRef(i,0) = arr[i];
-    }
+    inputs = newInputs;
 
-    dropRandomOutputs();
+    outputs = inputs;
 }
 
 void InputLayer::dropRandomOutputs()
@@ -78,7 +73,7 @@ HiddenLayer::HiddenLayer(int inputSize, int outputSize)
 {
     size = outputSize;
 
-    dropoutPreservationRate = 1.0;
+    dropoutPreservationRate = .5;
 
     dropoutValuesForOutputs = MatrixXd::Random(outputSize, 1);
 
@@ -94,14 +89,12 @@ HiddenLayer::HiddenLayer(int inputSize, int outputSize)
 void HiddenLayer::feedFrom(MatrixXd feed)
 {
     inputs = feed;
-    inputs.conservativeResize(inputs.rows() + 1,1);
+    inputs.conservativeResize(feed.rows() + 1, 1);
     inputs.coeffRef(feed.rows(), 0) = 1.0;
 
     outputs = inputWeights * inputs;
 
     outputs = map(outputs, relu);
-
-    dropRandomOutputs();
 }
 
 MatrixXd HiddenLayer::backpropogateWith(MatrixXd lastGradient)
@@ -191,7 +184,7 @@ OutputLayer::OutputLayer(int inputSize, int outputSize)
 {
     size = outputSize;
 
-    inputs.conservativeResize(size+1,1);
+    inputs.conservativeResize(size + 1, 1);
 
     outputs.conservativeResize(outputSize, 1);
 
@@ -202,45 +195,10 @@ OutputLayer::OutputLayer(int inputSize, int outputSize)
     setRandomWeights();
 }
 
-void OutputLayer::feedFrom(MatrixXd feed)
+MatrixXd OutputLayer::calculateError(MatrixXd desiredOutputs, double learningRate)
 {
-    inputs = feed;
-    inputs.conservativeResize(feed.rows() + 1, 1);
-    inputs.coeffRef(feed.rows(), 0) = 1.0;
-
-    outputs = inputWeights * inputs;
-
-    outputs = map(outputs, relu);
+    return ((desiredOutputs - outputs) * learningRate);
 }
-
-MatrixXd OutputLayer::backpropogateWith(MatrixXd desiredOutputs, double learningRate)
-{
-    MatrixXd errors = desiredOutputs - outputs;
-
-    errors = errors * learningRate;
-
-    MatrixXd gradient = errors.cwiseProduct(map(outputs, dSoftPlus));
-
-    MatrixXd deltaE = gradient * inputs.transpose();
-
-
-    MatrixXd gradientOut = inputWeights.transpose() * errors;
-
-    gradientOut.conservativeResize(gradientOut.rows()-1, gradientOut.cols());
-
-
-    inputWeights = inputWeights + deltaE;
-
-    return gradientOut;
-}
-
-MatrixXd OutputLayer::backpropogateWith(std::vector<double> desiredOutputs, double learningRate)
-{
-    return OutputLayer::backpropogateWith(Map<Matrix<double, 1, 1> >(desiredOutputs.data()), learningRate);
-}
-
-
-
 
 
 

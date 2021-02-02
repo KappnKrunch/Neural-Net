@@ -44,7 +44,7 @@ public:
 
     InputLayer(int size);
 
-    void feedFrom(std::vector<double>& arr);
+    void feedFrom(MatrixXd newInputs);
 
     void dropRandomOutputs();
 
@@ -89,11 +89,7 @@ public:
 
     OutputLayer(int inputSize, int outputSize);
 
-    void feedFrom(MatrixXd feed);
-
-    MatrixXd backpropogateWith(MatrixXd desiredOutputs, double learningRate);
-
-    MatrixXd backpropogateWith(std::vector<double> desiredOutputs, double learningRate);
+    MatrixXd calculateError(MatrixXd desiredOutputs, double learningRate);
 };
 
 #endif // LAYERS_H

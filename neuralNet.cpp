@@ -7,11 +7,9 @@ NeuralNet::NeuralNet(int inputSize, int hiddenSize, int outputSize)
      outputLayer(hiddenSize, outputSize),
      iteration(0),learningRate(0.01)
 {
-    std::vector<double> initialFeed;
+    MatrixXd initialFeed = MatrixXd(inputSize,1);
 
-    hiddenLayers.push_back(HiddenLayer(inputSize, hiddenSize));
-
-    initialFeed.resize(inputSize, 0.0);
+    initialFeed.setZero();
 
     feedForward(initialFeed);
 }
@@ -22,20 +20,22 @@ NeuralNet::NeuralNet(int inputSize, std::vector<int> hiddenSize, int outputSize)
      outputLayer(hiddenSize[hiddenSize.size()-1], outputSize),
      iteration(0),learningRate(0.01)
 {
-    std::vector<double> initialFeed;
+    MatrixXd initialFeed = MatrixXd(inputSize,1);
 
     hiddenLayers[0] = HiddenLayer(inputSize, hiddenSize[0]);
 
     for(int i(1); i < hiddenSize.size(); i++)
         hiddenLayers[i] = HiddenLayer(hiddenSize[i-1], hiddenSize[i]);
 
-
-    initialFeed.resize(inputSize, 0.0);
+    initialFeed.setZero();
 
     feedForward(initialFeed);
 }
 
-void NeuralNet::feedForward(std::vector<double> inputs)
+
+
+
+void NeuralNet::feedForward(MatrixXd inputs)
 {
     inputLayer.feedFrom(inputs);
 
@@ -49,9 +49,11 @@ void NeuralNet::feedForward(std::vector<double> inputs)
     outputLayer.feedFrom(hiddenLayers[hiddenLayers.size() - 1].outputs);
 }
 
-void NeuralNet::backpropagate(std::vector<double> desiredOutput)
+void NeuralNet::backpropagate(MatrixXd desiredOutput)
 {
-    MatrixXd delta = outputLayer.backpropogateWith(desiredOutput, learningRate);
+    MatrixXd delta = outputLayer.calculateError(desiredOutput, learningRate);
+
+    delta = outputLayer.backpropogateWith(delta);
 
     for(int i(0); i < hiddenLayers.size(); i++)
     {
@@ -64,13 +66,14 @@ void NeuralNet::backpropagate(std::vector<double> desiredOutput)
 void NeuralNet::train(int iterations, double learningRate)
 {
     std::cout << "Training from " << iteration << " to " << iteration + iterations << std::endl;
+
     TrainingData data;
 
     this->learningRate = learningRate;
 
     for(int i(0); i < iterations; i++)
     {
-        data = generateTrainingData();
+        data = sinExample();
 
         feedForward(data.first);
 
@@ -86,29 +89,34 @@ void NeuralNet::trainStochastically(int sampleSize, int sampleCount, double lear
 
     TrainingData data;
 
-    this->learningRate = learningRate;
+    MatrixXd summedError = MatrixXd(outputLayer.outputs.rows(), 1);
 
+
+
+    this->learningRate = learningRate;
 
     for(int i(0); i < sampleCount; i++)
     {
-        MatrixXd summedOutputs = MatrixXd(outputLayer.outputs.rows(), 1).setZero();
+        summedError = summedError.setZero();
 
         for(int j(0); j < sampleSize; j++)
         {
-            data = generateTrainingData();
+            data = sinExample();
 
             feedForward(data.first);
 
-            summedOutputs += outputLayer.outputs;
+            summedError += outputLayer.calculateError(data.second, learningRate);
         }
 
-        outputLayer.outputs = (summedOutputs / sampleSize);
+        summedError /= sampleSize;
 
         backpropagate(data.second);
     }
 
 
     feedForward(data.first);
+
+    std::cout << "Finished training." << std::endl;
 }
 
 void NeuralNet::setDropoutPresevervationRateForAll(double rate)
@@ -127,23 +135,6 @@ void NeuralNet::setDropoutPresevervationRate(std::vector<double> layerRates)
 
     for(int i(0); i < hiddenLayers.size(); i++)
         hiddenLayers[i].dropoutPreservationRate = layerRates[i + 1];
-}
-
-TrainingData NeuralNet::generateTrainingData()
-{
-    TrainingData data = waveExample();
-
-    if(inputLayer.inputs.rows() != data.first.size() ||
-       outputLayer.outputs.rows() != data.second.size() )
-    {
-        std::cout << "The example does not work with this network configuration";
-
-        std::cout << std::endl;
-
-        exit(1);
-    }
-
-    return data;
 }
 
 void NeuralNet::print()
@@ -182,7 +173,7 @@ void NeuralNet::printExamples(int examples)
 {
     for(int i(0); i < examples; i++)
     {
-        TrainingData trueData = generateTrainingData();
+        TrainingData trueData = xORExample();
 
 
         feedForward(trueData.first);
@@ -190,12 +181,12 @@ void NeuralNet::printExamples(int examples)
 
         std::cout << "Inputs " << std::endl;
 
-        std::cout << trueData.first << std::endl;
+        std::cout << trueData.first.transpose() << std::endl;
 
 
         std::cout << "True Outputs" << std::endl;
 
-        std::cout << trueData.second << std::endl;
+        std::cout << trueData.second.transpose() << std::endl;
 
 
         std::cout << "Guessed Outputs" << std::endl;
@@ -206,6 +197,148 @@ void NeuralNet::printExamples(int examples)
     }
 }
 
+
+TrainingData NeuralNet::xORExample()
+{
+    MatrixXd inputs = MatrixXd(2,1);
+    MatrixXd outputs = MatrixXd(1,1);
+
+
+    inputs.coeffRef(0,0) = rand() % 2;
+    inputs.coeffRef(1,0) = rand() % 2;
+
+
+    outputs.coeffRef(0,0) = double((inputs.coeff(0,0) || inputs.coeff(1,0)) &&
+            (inputs.coeff(0,0) != inputs.coeff(1,0)));
+
+
+    return {inputs, outputs};
+}
+
+TrainingData NeuralNet::sinExample()
+{
+    MatrixXd inputs = MatrixXd(1,1);
+    MatrixXd outputs = MatrixXd(1,1);
+
+
+    inputs.coeffRef(0,0) = (double(rand() % 10000) / 10000);
+
+    outputs.coeffRef(0,0) = 0.5*sin(inputs.coeff(0,0) * 2.0 * 3.14159) + 0.5;
+
+
+    return {inputs, outputs};
+}
+
+
+
+void NeuralNet::print1x1NetworkImage(std::string name)
+{
+    std::ofstream image(name + ".ppm");
+
+    int res = 256;
+
+    std::cout << "Printing image.." << std::endl;
+
+    std::vector<std::vector<Color>> baseImage;
+
+    baseImage.resize(res+1);
+
+    for(int i(0); i < res+1; i++)
+        baseImage.at(i).resize(res+1, Color{254,254,254});
+
+    for(int i(0); i < res; i++)
+    {
+        int y1 = ceil( (0.5*sin(2.0 * 3.14159 * double(i)/res) + 0.5) * double(res));
+        y1 = std::min(std::max(y1, 0), res-1);
+
+        int y2 = floor( (0.5*sin(2.0 * 3.14159 * double(i)/res) + 0.5) * double(res));
+        y2 = std::min(std::max(y2, 0), res-1);
+
+        baseImage[y1][i] = Color{50, 100, 200};
+        baseImage[y2][i] = Color{50, 100, 200};
+    }
+
+    MatrixXd yMatrix = MatrixXd(1,1);
+
+    for(int i(0); i < res; i++)
+    {
+        yMatrix.coeffRef(0,0) = (double(i)/res);
+
+        feedForward(yMatrix);
+
+        int y = int(outputLayer.outputs.coeff(0,0) * double(res));
+
+        y = std::max(std::min(y, res-1), 0);
+
+        baseImage[y][i] = Color{0, 0, 0};
+    }
+
+    image << "P3" << std::endl;
+    image << res << " " << res << std::endl;
+    image << "255" << std::endl;
+
+
+    for(int y(0); y < res; y++)
+    {
+        for(int x(0); x < res; x++)
+        {
+            image << baseImage[y][x].r << " " << baseImage[y][x].g << " " << baseImage[y][x].b << std::endl;
+        }
+    }
+
+    image.close();
+
+    std::cout << "Done!" << std::endl;
+}
+
+
+void NeuralNet::print2x1NetworkImage(std::string name)
+{
+    std::ofstream image(name + ".ppm");
+
+    int res = 256;
+
+    std::cout << "Printing image.." << std::endl;
+
+    image << "P3" << std::endl;
+    image << res << " " << res << std::endl;
+    image << "255" << std::endl;
+
+    Color pixel;
+
+    MatrixXd pixelLocation = MatrixXd(2,1);
+
+    double pixelStrength;
+
+    for(int y(0); y < res; y++)
+    {
+        for(int x(0); x < res; x++)
+        {
+            pixelLocation.coeffRef(0,0) = x / res;
+
+            pixelLocation.coeffRef(1,0) = y / res;
+
+            feedForward(pixelLocation);
+
+
+             pixelStrength = outputLayer.outputs.coeff(0,0);
+
+
+            pixel = Color{
+                    int(254 * pixelStrength),
+                    int(254 * pixelStrength),
+                    int(254 * pixelStrength) };
+
+            image << pixel.r << " " << pixel.g << " " << pixel.b << std::endl;
+        }
+    }
+
+    image.close();
+
+    std::cout << "Done!" << std::endl;
+}
+
+/*
 void NeuralNet::print1x1NetworkImage(std::string name)
 {
     std::ofstream image(name + ".ppm");
@@ -260,117 +393,4 @@ void NeuralNet::print1x1NetworkImage(std::string name)
 
     std::cout << "Done!" << std::endl;
 }
-
-TrainingData NeuralNet::xORExample()
-{
-    std::vector<double> inputs;
-
-    std::vector<double> outputs;
-
-
-    inputs.push_back( rand() % 2 );
-    inputs.push_back( rand() % 2 );
-
-
-    outputs.push_back((inputs[0] || inputs[1]) && (inputs[0] != inputs[1]));
-
-
-    return {inputs, outputs};
-}
-
-TrainingData NeuralNet::fakeExample()
-{
-    std::vector<double> inputs;
-
-    std::vector<double> outputs;
-
-    inputs.resize(inputLayer.inputs.rows());
-
-    outputs.resize(outputLayer.outputs.rows());
-
-    for(int i(0); i < inputs.size(); i++)
-        inputs.at(i) = rand() % 2;
-
-    for(int i(0); i < outputs.size(); i++)
-        outputs.at(i) = rand() % 2;
-
-    return {inputs, outputs};
-}
-
-TrainingData NeuralNet::powXExample()
-{
-    std::vector<double> inputs;
-    std::vector<double> outputs;
-
-    inputs.push_back(rand() % 6);
-
-    inputs[0] /= 5;
-
-    outputs.push_back(pow(2.0,inputs[0]));
-
-    outputs[0] /= 2*2*2*2*2;
-
-
-    return {inputs, outputs};
-}
-
-double NeuralNet::normalSinWave(double x)
-{
-    return sin(x * 2.0 * 3.15159)*0.5 + 0.5;
-}
-
-double NeuralNet::randomWave(double x)
-{
-    double out(0);
-
-    //peaks maybe corresponded to difficulty training
-    std::vector<double> coefs{1,0,0,1,0,0,1,0,0,1};
-
-    for(int i(0); i < coefs.size(); i++)
-    {
-        out += coefs[i] * normalSinWave(x * double(i));
-    }
-
-    return (out / coefs.size());
-}
-
-TrainingData NeuralNet::sinXExample()
-{
-    std::vector<double> inputs;
-    std::vector<double> outputs;
-
-    double randPi = double(rand() % 10000)/ 10000;
-
-    inputs.push_back(randPi);
-
-    outputs.push_back(normalSinWave(randPi));
-
-
-    return {inputs, outputs};
-}
-
-TrainingData NeuralNet::waveExample()
-{
-    std::vector<double> inputs;
-    std::vector<double> outputs;
-
-    double randPi = double(rand() % 10000)/ 10000;
-
-    inputs.push_back(randPi);
-
-    outputs.push_back(randomWave(randPi));
-
-
-    return {inputs, outputs};
-}
-
-template <typename T>
-std::ostream & operator << (std::ostream & output, const std::vector<T> & vector)
-{
-    for(int i(0); i < vector.size(); i++)
-    {
-        output << vector[i] << ((i < vector.size() - 1)? ", " : "");
-    }
-
-    return output;
-}
+*/
