@@ -6,14 +6,12 @@ using namespace std;
 
 int main()
 {
-    NeuralNet net = NeuralNet(1, {10,20,10}, 1);
+    NeuralNet net = NeuralNet(1, {50}, 1);
 
     time_t startTime = time(0);
 
-    cout << "t" << endl;
 
-
-    net.trainStochastically(100, 10000, .01);
+    net.trainStochastically(1000, 1000, .01);
 
     //net.train(10000, .1);
 

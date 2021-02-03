@@ -2,8 +2,8 @@
 
 
 InputLayer::InputLayer(int size)
-    :inputs(MatrixXd(size,1)), outputs(MatrixXd(size,1)), size(size),
-     dropoutPreservationRate(1.0), dropoutValuesForOutputs(MatrixXd(size,1))
+    :inputs(MatrixXd(size, 1)), outputs(MatrixXd(size, 1)), size(size),
+     dropoutPreservationRate(1.0), dropoutValuesForOutputs(MatrixXd(size, 1))
 {}
 
 void InputLayer::feedFrom(MatrixXd newInputs)
@@ -69,7 +69,7 @@ HiddenLayer::HiddenLayer()
 {}
 
 HiddenLayer::HiddenLayer(int inputSize, int outputSize)
-    :InputLayer(0),inputWeights(MatrixXd(outputSize, inputSize + 1))
+    :InputLayer(0), inputWeights(MatrixXd(outputSize, inputSize + 1))
 {
     size = outputSize;
 
@@ -77,7 +77,7 @@ HiddenLayer::HiddenLayer(int inputSize, int outputSize)
 
     dropoutValuesForOutputs = MatrixXd::Random(outputSize, 1);
 
-    inputs = ArrayXd(inputSize+1);
+    inputs = ArrayXd(inputSize + 1);
 
     outputs = ArrayXd(outputSize);
 
@@ -199,6 +199,8 @@ MatrixXd OutputLayer::calculateError(MatrixXd desiredOutputs, double learningRat
 {
     return ((desiredOutputs - outputs) * learningRate);
 }
+
+
 
 
 

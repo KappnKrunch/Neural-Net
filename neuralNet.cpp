@@ -3,7 +3,7 @@
 
 NeuralNet::NeuralNet(int inputSize, int hiddenSize, int outputSize)
     :inputLayer(inputSize),
-     hiddenLayers(0),
+      hiddenLayers({HiddenLayer(inputSize,hiddenSize)}),
      outputLayer(hiddenSize, outputSize),
      iteration(0),learningRate(0.01)
 {
