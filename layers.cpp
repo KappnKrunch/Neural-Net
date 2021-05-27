@@ -22,15 +22,12 @@ void InputLayer::feedFrom(MatrixXd newInputs)
     inputs = newInputs;
 
     outputs = inputs;
-}
 
-void InputLayer::dropRandomOutputs()
-{
-    MatrixXd dropoutValuesForOutputs = MatrixXd::Random(3,3);
+    //mask the outputs to impllement dropout
 
-    dropoutValuesForOutputs = (dropoutValuesForOutputs + MatrixXd::Constant(3,3,1.))/2.;
+    //MatrixXd droppedOuts = maskMatrix(outputs, randomMatrix(size, 1), dropoutPreservationRate);
 
-    outputs = maskMatrix(outputs, dropoutValuesForOutputs, dropoutPreservationRate);
+    //outputs = droppedOuts;
 }
 
 void InputLayer::printOutputs()
@@ -73,7 +70,7 @@ HiddenLayer::HiddenLayer(int inputSize, int outputSize)
 {
     size = outputSize;
 
-    dropoutPreservationRate = .5;
+    dropoutPreservationRate = 1.0;
 
     dropoutValuesForOutputs = MatrixXd::Random(outputSize, 1);
 
@@ -86,7 +83,7 @@ HiddenLayer::HiddenLayer(int inputSize, int outputSize)
     setRandomWeights();
 }
 
-void HiddenLayer::feedFrom(MatrixXd feed)
+void HiddenLayer::feedFrom(MatrixXd feed, bool withDropout)
 {
     inputs = feed;
     inputs.conservativeResize(feed.rows() + 1, 1);
@@ -95,6 +92,14 @@ void HiddenLayer::feedFrom(MatrixXd feed)
     outputs = inputWeights * inputs;
 
     outputs = map(outputs, relu);
+
+    //mask outputs to implement dropout
+    if(withDropout)
+    {
+        MatrixXd droppedOuts = maskMatrix(outputs, randomMatrix(size, 1), dropoutPreservationRate);
+
+        outputs = droppedOuts;
+    }
 }
 
 MatrixXd HiddenLayer::backpropogateWith(MatrixXd lastGradient)
@@ -236,6 +241,16 @@ double dSoftPlus(double x)
     return sigmoid(x);
 }
 
+double nada(double x)
+{
+    return x;
+}
+
+double dNada(double x)
+{
+    return 1.0;
+}
+
 MatrixXd map(MatrixXd matrix, double (*func)(double) )
 {
     for(int i(0); i < matrix.rows(); i++)
@@ -249,10 +264,33 @@ MatrixXd map(MatrixXd matrix, double (*func)(double) )
 
 MatrixXd maskMatrix(MatrixXd mat, MatrixXd mask, double strength)
 {
-    for(int i(0); i < mat.rows(); i++)
+    //takes a similar matrix with values between 0-1 and a cutoff strength,
+    //anything
+    if(mat.rows() != mask.rows() || mat.cols() != mask.cols())
     {
-        mat.coeffRef(i,0) = (strength < mask.coeff(i,0)? 0.0 : mat.coeff(i,0));
+        std::cout << "mask does not fit matrix" << std::endl;
+
+        exit(1);
     }
 
+    for(int i(0); i < mat.rows(); i++)
+    {
+        mat.coeffRef(i, 0) =
+            ( (mask.coeff(i, 0) > (1.0-strength)) ? mat.coeff(1, 0) : 0.0 );
+    }
+
+
     return mat;
+}
+
+MatrixXd randomMatrix(int r, int c)
+{
+    //random matrix between 0-1
+
+    MatrixXd dropoutValuesForOutputs = MatrixXd::Random(r, c);
+
+    dropoutValuesForOutputs = (dropoutValuesForOutputs + MatrixXd::Constant(r, c, 1.0))/2.0;
+
+
+    return dropoutValuesForOutputs;
 }

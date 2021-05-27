@@ -31,9 +31,11 @@ public:
 
     void backpropagate(MatrixXd desiredOutput);
 
-    void setDropoutPresevervationRateForAll(double rate);
+    void setDropoutPresevervationRates(double allLayersRate);
 
-    void setDropoutPresevervationRate(std::vector<double> layerRates);
+    void setDropoutPresevervationRates(std::vector<double> layerRates);
+
+    std::vector<double> getDropoutPresevervationRates();
 
     void print();
 

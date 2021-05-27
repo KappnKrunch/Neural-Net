@@ -9,6 +9,8 @@ NeuralNet::NeuralNet(int inputSize, int hiddenSize, int outputSize)
 {
     MatrixXd initialFeed = MatrixXd(inputSize,1);
 
+    setDropoutPresevervationRates(1.0);
+
     initialFeed.setZero();
 
     feedForward(initialFeed);
@@ -39,14 +41,15 @@ void NeuralNet::feedForward(MatrixXd inputs)
 {
     inputLayer.feedFrom(inputs);
 
-    hiddenLayers[0].feedFrom(inputLayer.outputs);
+    //first hidden layer
+    hiddenLayers[0].feedFrom(inputLayer.outputs, false);
 
     for(int i(1); i < hiddenLayers.size(); i++)
     {
-        hiddenLayers[i].feedFrom(hiddenLayers[i-1].outputs);
+        hiddenLayers[i].feedFrom(hiddenLayers[i-1].outputs, false);
     }
 
-    outputLayer.feedFrom(hiddenLayers[hiddenLayers.size() - 1].outputs);
+    outputLayer.feedFrom(hiddenLayers[hiddenLayers.size() - 1].outputs, false);
 }
 
 void NeuralNet::backpropagate(MatrixXd desiredOutput)
@@ -119,23 +122,43 @@ void NeuralNet::trainStochastically(int sampleSize, int sampleCount, double lear
     std::cout << "Finished training." << std::endl;
 }
 
-void NeuralNet::setDropoutPresevervationRateForAll(double rate)
+void NeuralNet::setDropoutPresevervationRates(double allLayersRate)
 {
-    std::vector<double> layerRates;
+    inputLayer.dropoutPreservationRate = allLayersRate;
 
-
-    layerRates.resize(1 + hiddenLayers.size(), rate);
-
-    setDropoutPresevervationRate(layerRates);
+    for(int i(0); i < hiddenLayers.size(); i++)
+        hiddenLayers[i].dropoutPreservationRate = allLayersRate;
 }
 
-void NeuralNet::setDropoutPresevervationRate(std::vector<double> layerRates)
+void NeuralNet::setDropoutPresevervationRates(std::vector<double> layerRates)
 {
+    if(layerRates.size() < hiddenLayers.size() + 1)
+    {
+        std::cout << "error dropout rates vector missized" << std::endl;
+        exit(1);
+    }
+
     inputLayer.dropoutPreservationRate = layerRates[0];
 
     for(int i(0); i < hiddenLayers.size(); i++)
         hiddenLayers[i].dropoutPreservationRate = layerRates[i + 1];
 }
+
+
+std::vector<double> NeuralNet::getDropoutPresevervationRates()
+{
+    std::vector<double> outRates;
+
+    outRates.resize(hiddenLayers.size()+1);
+
+    outRates[0] = inputLayer.dropoutPreservationRate;
+
+    for(int i(0); i < outRates.size()-1; i++)
+        outRates[i+1] = hiddenLayers[i].dropoutPreservationRate;
+
+    return outRates;
+}
+
 
 void NeuralNet::print()
 {
@@ -223,7 +246,7 @@ TrainingData NeuralNet::sinExample()
 
     inputs.coeffRef(0,0) = (double(rand() % 10000) / 10000);
 
-    outputs.coeffRef(0,0) = 0.5*sin(inputs.coeff(0,0) * 2.0 * 3.14159) + 0.5;
+    outputs.coeffRef(0,0) = 0.5*sin(inputs.coeff(0,0) * 6.0 * 3.14159) + 0.5;
 
 
     return {inputs, outputs};
@@ -234,43 +257,54 @@ TrainingData NeuralNet::sinExample()
 void NeuralNet::print1x1NetworkImage(std::string name)
 {
     std::ofstream image(name + ".ppm");
-
     int res = 256;
+    std::vector<std::vector<Color>> baseImage;
+
+    std::vector<double> oldDropRates = getDropoutPresevervationRates();
+    std::vector<double> newDropRates;
+
+    newDropRates.resize(oldDropRates.size(), 1.0);
+    setDropoutPresevervationRates(newDropRates);
 
     std::cout << "Printing image.." << std::endl;
 
-    std::vector<std::vector<Color>> baseImage;
-
     baseImage.resize(res+1);
+
+    int y;
+    int lastHeight = 0;
 
     for(int i(0); i < res+1; i++)
         baseImage.at(i).resize(res+1, Color{254,254,254});
 
     for(int i(0); i < res; i++)
     {
-        int y1 = ceil( (0.5*sin(2.0 * 3.14159 * double(i)/res) + 0.5) * double(res));
-        y1 = std::min(std::max(y1, 0), res-1);
+        y = ceil( (0.5*sin(6.0 * 3.14159 * double(i)/res) + 0.5) * double(res));
+        y = std::min(std::max(y, 0), res-1);
 
-        int y2 = floor( (0.5*sin(2.0 * 3.14159 * double(i)/res) + 0.5) * double(res));
-        y2 = std::min(std::max(y2, 0), res-1);
+        baseImage[y][i] = Color{50, 100, 200};
 
-        baseImage[y1][i] = Color{50, 100, 200};
-        baseImage[y2][i] = Color{50, 100, 200};
+        lastHeight = y;
     }
 
-    MatrixXd yMatrix = MatrixXd(1,1);
+    MatrixXd yMatrix = MatrixXd(1,1);    
 
     for(int i(0); i < res; i++)
     {
-        yMatrix.coeffRef(0,0) = (double(i)/res);
+        yMatrix.coeffRef(0, 0) = (double(i)/res);
 
         feedForward(yMatrix);
 
-        int y = int(outputLayer.outputs.coeff(0,0) * double(res));
-
+        y = int(outputLayer.outputs.coeff(0, 0) * double(res));
         y = std::max(std::min(y, res-1), 0);
 
-        baseImage[y][i] = Color{0, 0, 0};
+        lastHeight = i != 0? lastHeight : y;
+
+        for(int j(std::min(lastHeight, y)); j <= std::max(lastHeight, y); j++)
+        {
+            baseImage[j][i] = Color{0, 0, 0};
+        }
+
+        lastHeight = y;
     }
 
     image << "P3" << std::endl;
@@ -287,6 +321,8 @@ void NeuralNet::print1x1NetworkImage(std::string name)
     }
 
     image.close();
+
+    setDropoutPresevervationRates(oldDropRates);
 
     std::cout << "Done!" << std::endl;
 }

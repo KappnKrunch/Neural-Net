@@ -7,6 +7,7 @@
 #include <math.h>
 #include <iomanip>
 #include <Eigen/Dense>
+#include <numeric>
 
 using namespace Eigen;
 
@@ -23,9 +24,15 @@ static double softPlus(double x);
 
 static double dSoftPlus(double x);
 
+static double nada(double x);
+
+static double dNada(double x);
+
 static MatrixXd map(MatrixXd, double (*func)(double) );
 
 static MatrixXd maskMatrix(MatrixXd mat, MatrixXd mask, double strength);
+
+static MatrixXd randomMatrix(int r, int c);
 
 
 class InputLayer
@@ -46,8 +53,6 @@ public:
 
     void feedFrom(MatrixXd newInputs);
 
-    void dropRandomOutputs();
-
     void printInputs();
 
     void printOutputs();
@@ -66,7 +71,7 @@ public:
 
     HiddenLayer(int inputSize, int outputSize);
 
-    void feedFrom(MatrixXd feed);
+    void feedFrom(MatrixXd feed, bool withDropout);
 
     MatrixXd backpropogateWith(MatrixXd lastGradient);
 
